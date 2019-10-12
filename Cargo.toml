@@ -1,0 +1,15 @@
+[package]
+name = "soleil"
+version = "0.1.0"
+authors = ["Cedric Leroy <leroycedric@protonmail.com>"]
+
+[lib]
+name = "soleil"
+crate-type = ["cdylib"]
+
+[dependencies]
+dict_derive = "0.2.0"
+
+[dependencies.pyo3]
+version = "0.8"
+features = ["extension-module"]
