@@ -469,7 +469,7 @@ fn topocentric_astronomers_azimuth(h_prime: &f64, delta_prime: &f64, lat: &f32) 
 
 fn topocentric_azimuth_angle(gamma: &f64) -> f64 {
     let phi = gamma + 180.;
-    phi
+    ((phi % 360.) + 360.) % 360.
 }
 
 
@@ -937,6 +937,10 @@ mod tests {
     fn test_topocentric_azimuth_angle() {
         let gamma = 20.;
         assert_eq!(200., spa::topocentric_azimuth_angle(&gamma));
+        let gamma = 220.;
+        assert_eq!(40., spa::topocentric_azimuth_angle(&gamma));
+        let gamma = -200.;
+        assert_eq!(340., spa::topocentric_azimuth_angle(&gamma));
     }
 
 } 
