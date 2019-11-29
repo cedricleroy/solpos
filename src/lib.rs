@@ -26,7 +26,7 @@ fn spa_rust(_py: Python, m: &PyModule) -> PyResult<()> {
     Ok(res)
   }
 
-  #[pyfn(m, "spa")]
+  #[pyfn(m, "spa_scalar")]
   fn spa_scalar_py(
     _py: Python,
     unixtime: u64,

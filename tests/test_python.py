@@ -1,9 +1,9 @@
 import numpy.testing as npt
-from soleil import spa
+from soleil import spa_scalar
 
 
 def test_spa():
-    res = spa(
+    res = spa_scalar(
         1538939951,
         2018,
         10,
