@@ -9,6 +9,10 @@ crate-type = ["cdylib"]
 
 [dependencies]
 dict_derive = "0.2.0"
+numpy = "0.7.0"
+ndarray = "0.13"
+rayon = "1.2.1"
+assert_approx_eq = "1.1.0"
 
 [dependencies.pyo3]
 version = "0.8"
