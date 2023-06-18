@@ -1,19 +1,33 @@
 [package]
-name = "soleil"
+name = "solpos"
 version = "0.1.0"
-authors = ["Cedric Leroy <leroycedric@protonmail.com>"]
+edition = "2021"
+authors = ["Cedric Leroy"]
 
 [lib]
-name = "soleil"
-crate-type = ["cdylib"]
+name = "solpos"
+# "cdylib" is necessary to produce a shared library for Python to import from.
+crate-type = ["cdylib", "lib"]
 
 [dependencies]
-dict_derive = "0.2.0"
-numpy = "0.7.0"
-ndarray = "0.13"
-rayon = "1.2.1"
-assert_approx_eq = "1.1.0"
+derive_builder = "0.12.0"
+chrono = "0.4.24"
+rayon = "1.7.0"
+numpy = "0.14"
 
 [dependencies.pyo3]
-version = "0.8"
-features = ["extension-module"]
+version = "0.18.0"
+# "abi3-py37" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.10
+features = ["abi3-py310"]
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "solpos"
+harness = false
+
+[profile.profiling]
+inherits = "release"
+debug = true
+

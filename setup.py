@@ -7,11 +7,11 @@ install_requires = ['numpy']
 test_requires = install_requires + ['pytest']
 
 setup(
-    name='soleil',
+    name='solpos',
     version='0.1.0',
     description='...',
     rust_extensions=[RustExtension(
-            'soleil.spa_rust',
+            'solpos.spa_rust',
             './Cargo.toml',
         )],
     install_requires=install_requires,

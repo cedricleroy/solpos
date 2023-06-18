@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from soleil import spa_scalar, spa_vector
+from solpos import spa_scalar, spa_vector
 
 
 def test_spa():

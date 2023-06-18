@@ -3,6 +3,5 @@ target/
 **/*.rs.bk
 *.so
 venv/
-soleil.egg-info/
 __pycache__/
 .mypy_cache/

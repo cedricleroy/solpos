@@ -1,170 +1,71 @@
-mod spa;
+pub mod solpos;
+mod utils;
 
-extern crate assert_approx_eq;
-extern crate dict_derive;
-extern crate ndarray;
-extern crate numpy;
-extern crate pyo3;
-extern crate rayon;
+#[macro_use]
+extern crate derive_builder;
 
-use ndarray::{Array2, ArrayView2};
-use numpy::{IntoPyArray, PyArray2};
-use pyo3::prelude::{pymodule, Py, PyModule, PyResult, Python};
-use rayon::prelude::*;
-
-struct Input {
-    unixtime: u64,
-    year: i16,
-    month: u8,
-    lat: f32,
-    lon: f32,
-    elev: f32,
-    pressure: f32,
-    temp: f32,
-    atmos_refract: f32,
-}
-
-fn spa_vector(inputs: ArrayView2<f64>) -> Array2<f64> {
-    // transform into vectors of inputs with correct types
-    let mut v: Vec<Input> = Vec::new();
-    for row in inputs.genrows() {
-        v.push(Input {
-            unixtime: row[0] as u64,
-            year: row[1] as i16,
-            month: row[2] as u8,
-            lat: row[3] as f32,
-            lon: row[4] as f32,
-            elev: row[5] as f32,
-            pressure: row[6] as f32,
-            temp: row[7] as f32,
-            atmos_refract: row[8] as f32,
-        });
-    }
-    // parallel iterator
-    let res_iter = v.par_iter().map(|x| {
-        let delta_t = spa::calculate_deltat(&x.year, &x.month);
-        let res = spa::solar_position(
-            &x.unixtime,
-            &x.lat,
-            &x.lon,
-            &x.elev,
-            &x.pressure,
-            &x.temp,
-            &delta_t,
-            &x.atmos_refract,
-        );
-        res
-    });
-    // collect results and prepare output
-    let res_vec: Vec<spa::Result> = res_iter.collect();
-    let mut res_array = Array2::<f64>::zeros((inputs.dim().0, 5));
-    for (i, res) in res_vec.into_iter().enumerate() {
-        res_array[[i, 0]] = res.theta;
-        res_array[[i, 1]] = res.theta0;
-        res_array[[i, 2]] = res.e;
-        res_array[[i, 3]] = res.e0;
-        res_array[[i, 4]] = res.phi;
-    }
-    res_array
-}
+use pyo3::prelude::*;
+use pyo3::types::PyDict;
 
 #[pymodule]
-fn spa_rust(_py: Python, m: &PyModule) -> PyResult<()> {
-    fn spa_scalar(
-        unixtime: u64,
-        year: i16,
-        month: u8,
-        lat: f32,
-        lon: f32,
-        elev: f32,
-        pressure: f32,
-        temp: f32,
-        atmos_refract: f32,
-    ) -> PyResult<spa::Result> {
-        let delta_t = spa::calculate_deltat(&year, &month);
-        let res = spa::solar_position(
-            &unixtime,
-            &lat,
-            &lon,
-            &elev,
-            &pressure,
-            &temp,
-            &delta_t,
-            &atmos_refract,
-        );
-        Ok(res)
-    }
-
-    #[pyfn(m, "spa_scalar")]
-    fn spa_scalar_py(
-        _py: Python,
-        unixtime: u64,
-        year: i16,
-        month: u8,
-        lat: f32,
-        lon: f32,
-        elev: f32,
-        pressure: f32,
-        temp: f32,
-        atmos_refract: f32,
-    ) -> PyResult<spa::Result> {
-        spa_scalar(
-            unixtime,
-            year,
-            month,
-            lat,
-            lon,
-            elev,
-            pressure,
-            temp,
-            atmos_refract,
-        )
-    }
-
-    #[pyfn(m, "spa_vector")]
-    fn spa_vector_py(py: Python, x: &PyArray2<f64>) -> Py<PyArray2<f64>> {
-        let x = x.as_array();
-        spa_vector(x).into_pyarray(py).to_owned()
-    }
-
+fn pvcast_core(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(solar_position, m)?)?;
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
+#[pyfunction]
+fn solar_position<'a>(
+    _py: Python<'a>,
+    unixtimes: Vec<f64>,
+    request: &'a PyDict,
+) -> PyResult<&'a PyDict> {
+    let mut builder = solpos::SolPosInputsBuilder::default();
 
-    use super::*;
-    use assert_approx_eq::assert_approx_eq;
+    builder.unixtimes(unixtimes);
 
-    #[test]
-    fn test_spa_vector() {
-        let inputs = vec![
-            1538939951.,
-            2018.,
-            10.,
-            30.29,
-            -97.74,
-            213.,
-            1008.6,
-            23.,
-            0.5667,
-        ];
-        let mut two_inputs: Vec<f64> = Vec::new();
-        two_inputs.extend(inputs.iter().cloned());
-        two_inputs.extend(inputs.iter().cloned());
-        let expected: Vec<f64> = vec![
-            38.788075669522726,
-            38.80104099275841,
-            51.211924330477274,
-            51.19895900724159,
-            204.46709671428397,
-        ];
-        let a = Array2::from_shape_vec((2, 9), two_inputs).unwrap();
-        let res = spa_vector(a.view());
-        for row in res.genrows() {
-            for (a, b) in row.to_vec().iter().zip(expected.iter()) {
-                assert_approx_eq!(a, b);
-            }
-        }
+    if let Some(lat) = request.get_item("lat") {
+        builder.latitude(lat.extract()?);
     }
+    if let Some(lon) = request.get_item("lon") {
+        builder.longitude(lon.extract()?);
+    }
+    if let Some(elev) = request.get_item("elev") {
+        builder.elevation(elev.extract()?);
+    } else {
+        builder.elevation(0.);
+    }
+    if let Some(pressure) = request.get_item("pressure") {
+        builder.pressure(pressure.extract()?);
+    } else {
+        builder.pressure(101325.);
+    }
+    if let Some(temp) = request.get_item("temp") {
+        builder.temperature(temp.extract()?);
+    } else {
+        builder.temperature(12.);
+    }
+    if let Some(atmos_refract) = request.get_item("atmos_refract") {
+        builder.atmos_refract(atmos_refract.extract()?);
+    } else {
+        builder.atmos_refract(0.5667);
+    }
+    if let Some(parallel_calcs) = request.get_item("parallel_calcs") {
+        builder.parallel_calcs(parallel_calcs.extract()?);
+    } else {
+        builder.parallel_calcs(false);
+    }
+    let inputs = builder.build().unwrap(); // FIXME
+    let results = _py.allow_threads(move || solpos::calculate_solar_position(inputs));
+    let theta_vec: Vec<f64> = results.iter().map(|r| r.theta).collect();
+    let theta0_vec: Vec<f64> = results.iter().map(|r| r.theta0).collect();
+    let e_vec: Vec<f64> = results.iter().map(|r| r.e).collect();
+    let e0_vec: Vec<f64> = results.iter().map(|r| r.e0).collect();
+    let phi_vec: Vec<f64> = results.iter().map(|r| r.phi).collect();
+    let out = PyDict::new(_py);
+    out.set_item("theta", theta_vec)?;
+    out.set_item("theta0", theta0_vec)?;
+    out.set_item("e", e_vec)?;
+    out.set_item("e0", e0_vec)?;
+    out.set_item("phi", phi_vec)?;
+    Ok(out)
 }
