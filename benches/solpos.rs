@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pvcast_core::solpos;
+use solpos::spa;
 use std::error::Error;
 
 pub fn criterion_benchmark(c: &mut Criterion) -> Result<(), Box<dyn Error>> {
@@ -7,20 +7,20 @@ pub fn criterion_benchmark(c: &mut Criterion) -> Result<(), Box<dyn Error>> {
 
     // Expansive functions
     g.bench_function("heliocentric_longitude", |b| {
-        b.iter(|| black_box(solpos::heliocentric_longitude(0.01300074354513669)))
+        b.iter(|| black_box(spa::heliocentric_longitude(0.01300074354513669)))
     });
 
     g.bench_function("heliocentric_latitude", |b| {
-        b.iter(|| black_box(solpos::heliocentric_latitude(0.01300074354513669)))
+        b.iter(|| black_box(spa::heliocentric_latitude(0.01300074354513669)))
     });
 
     g.bench_function("heliocentric_radius_vector", |b| {
-        b.iter(|| black_box(solpos::heliocentric_radius_vector(0.01300074354513669)))
+        b.iter(|| black_box(spa::heliocentric_radius_vector(0.01300074354513669)))
     });
 
     g.bench_function("longitude_obliquity_nutation", |b| {
         b.iter(|| {
-            black_box(solpos::longitude_obliquity_nutation(
+            black_box(spa::longitude_obliquity_nutation(
                 0.13000741501255272,
                 58185.876481278865,
                 5037.671194893454,
@@ -32,11 +32,11 @@ pub fn criterion_benchmark(c: &mut Criterion) -> Result<(), Box<dyn Error>> {
     });
 
     g.bench_function("calculate_delta_t", |b| {
-        b.iter(|| black_box(solpos::calculate_deltat(2005., 6.)))
+        b.iter(|| black_box(spa::calculate_deltat(2005., 6.)))
     });
 
     // Entrypoint
-    let mut builder = solpos::SolPosInputsBuilder::default();
+    let mut builder = spa::SolPosInputsBuilder::default();
     builder.unixtimes(vec![1538939951.; 8760 * 60]);
     builder.latitude(30.29);
     builder.longitude(-97.74);
@@ -48,7 +48,7 @@ pub fn criterion_benchmark(c: &mut Criterion) -> Result<(), Box<dyn Error>> {
     let inputs = builder.build().unwrap();
 
     g.bench_function("solpos", |b| {
-        b.iter(|| black_box(solpos::calculate_solar_position(inputs.clone())))
+        b.iter(|| black_box(spa::calculate_solar_position(inputs.clone())))
     });
 
     g.finish();

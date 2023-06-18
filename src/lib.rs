@@ -1,4 +1,4 @@
-pub mod solpos;
+pub mod spa;
 mod utils;
 
 #[macro_use]
@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
 #[pymodule]
-fn pvcast_core(_py: Python, m: &PyModule) -> PyResult<()> {
+fn solpos(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(solar_position, m)?)?;
     Ok(())
 }
@@ -19,7 +19,7 @@ fn solar_position<'a>(
     unixtimes: Vec<f64>,
     request: &'a PyDict,
 ) -> PyResult<&'a PyDict> {
-    let mut builder = solpos::SolPosInputsBuilder::default();
+    let mut builder = spa::SolPosInputsBuilder::default();
 
     builder.unixtimes(unixtimes);
 
@@ -55,7 +55,7 @@ fn solar_position<'a>(
         builder.parallel_calcs(false);
     }
     let inputs = builder.build().unwrap(); // FIXME
-    let results = _py.allow_threads(move || solpos::calculate_solar_position(inputs));
+    let results = _py.allow_threads(move || spa::calculate_solar_position(inputs));
     let theta_vec: Vec<f64> = results.iter().map(|r| r.theta).collect();
     let theta0_vec: Vec<f64> = results.iter().map(|r| r.theta0).collect();
     let e_vec: Vec<f64> = results.iter().map(|r| r.e).collect();

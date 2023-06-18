@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "solpos"
+version = "0.1.0"
+description = ""
+authors = ["Cedric Leroy"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.dev-dependencies]
+maturin = "^0.14.16"
+ruff = "^0.0.259"
+mypy = "^1.1.1"
+black = "^23.1.0"
+pytest = "^7.2.2"
+isort = "^5.12.0"
+pvlib = "^0.9.5"
+pytest-benchmark = "^4.0.0"
+
+[tool.maturin]
+# "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
+features = ["pyo3/extension-module"]
+
+[tool.mypy]
+python_version = '3.10'
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.isort]
+line_length = 100
+include_trailing_comma = true
+multi_line_output = 3
+combine_as_imports = true
+force_grid_wrap = 0
+
+[build-system]
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
+
