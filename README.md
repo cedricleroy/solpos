@@ -32,7 +32,6 @@ source venv/bin/activate
 
 ```
 poetry install
-
 ```
 
 4. To build the project, run:
@@ -57,5 +56,4 @@ pytest
 
 ```
 cargo bench
-
 ```
